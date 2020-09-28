@@ -24,7 +24,9 @@ public class WeatherParser implements WeatherInfo {
         try {
             page = Jsoup.parse(new URL(url), 3000);
         } catch (IOException e) {
-            throw new RuntimeException("404 Not Found");
+            System.out.println("404 not found.");
+            System.out.println("Сегодня: Вт, 1 янв\nТемпература: -100 +100");
+            System.exit(0);
         }
         return page;
     }
