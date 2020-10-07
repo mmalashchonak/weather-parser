@@ -30,6 +30,7 @@ public class MySQLDB {
     /**
      * Create MySQL database table if it was not created yet.
      */ {
+         logger.info("Create new MySQL weather table if is not found.");
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
             Connection connection = getConnection(connectionUrl, userName, password);
@@ -39,7 +40,6 @@ public class MySQLDB {
                     "DAY CHAR(20) NOT NULL, " +
                     "WEATHER CHAR(30) NOT NULL, " +
                     "PRIMARY KEY (id))");
-            logger.info("New MySQL weather table created.");
         } catch (
                 Exception e) {
             e.printStackTrace();
