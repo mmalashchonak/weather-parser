@@ -2,6 +2,7 @@ package org.example.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.example.db.MySQLDB;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
@@ -14,6 +15,10 @@ import java.net.URL;
  * Parser of html page which extract today's date and temperature range.
  */
 public class WeatherParser implements WeatherInfo {
+    /**
+     * Get instance of MySQL database class.
+     */
+    MySQLDB database = MySQLDB.getDatabase();
 
     /**
      * Creating log4j2 logger.
@@ -22,6 +27,8 @@ public class WeatherParser implements WeatherInfo {
 
     /**
      * Build Jsoup Document from html page for further parsing.
+     * If parsing failed - the last weather from database will be printed in console.
+     *
      * @return Document
      * @throws RuntimeException If html page can not be downloaded. Caused by MalformedURLException.
      */
@@ -34,17 +41,18 @@ public class WeatherParser implements WeatherInfo {
             logger.info("Trying to parse html page.");
             page = Jsoup.parse(new URL(url), 3000);
         } catch (IOException e) {
-            logger.error("Html page parsing failed.");
-            System.out.println("404 not found.");
-            System.out.println("Сегодня: Вт, 1 янв \nТемпература: -100 +100");
+            logger.error("Html page parsing failed. Printing the last weather from database.");
+            database.printLastWeatherFromDatabase();
             System.exit(0);
         }
-        logger.info("Html page successfully parsed..");
+        logger.info("Html page successfully parsed.");
         return page;
     }
 
     /**
      * Build String with today's date and temperature range from Jsoup Document.
+     * Put the resulted String into MySQL database.
+     *
      * @return String
      */
     public String getWeatherInfo() {
@@ -55,8 +63,10 @@ public class WeatherParser implements WeatherInfo {
         String date = todayForecast.select("div[class=date]").text();
         Elements todayTemperatures = todayForecast.select("div[class=tabtempline tabtemp_0line clearfix]")
                 .select("span[class=unit unit_temperature_c]");
-        logger.info("Today'w weather successfully found. Printing in console.");
+        logger.info("Today's weather successfully found.");
+        database.putWeatherIntoDatabase(date, todayTemperatures.get(0).text() + " " + todayTemperatures.get(1).text());
+        logger.info("Weather was put into the database. Printing in console.");
         return "Сегодня: " + date + "\n" +
-               "Температура: " + todayTemperatures.get(0).text() + " " + todayTemperatures.get(1).text();
+                "Температура: " + todayTemperatures.get(0).text() + " " + todayTemperatures.get(1).text();
     }
 }
