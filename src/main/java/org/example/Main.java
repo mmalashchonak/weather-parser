@@ -6,10 +6,10 @@ import org.example.util.WeatherInfo;
 import org.example.util.WeatherParser;
 
 /**
- * Main class of weather html parser program using Jsoup and MySQL.
+ * Main class of weather html parser program using Jsoup, MySQL and MongoDB.
  *
  * @author mmalashchonak
- * @version 1.1 MySQL database storage added.
+ * @version 1.2 MongoBD storage added.
  */
 public class Main {
     /**
@@ -25,8 +25,7 @@ public class Main {
     /**
      * Program entry point.
      */
-    public static void main(String... args) throws ClassNotFoundException {
-
+    public static void main(String... args) {
         logger.info("Log4j2 started.");
         WeatherInfo weatherInfo = new WeatherParser();
         logger.info("WeatherParser created.");

@@ -2,23 +2,28 @@ package org.example.util;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.example.db.MySQLDB;
+import org.example.db.DBFactory;
+import org.example.db.DBTypes;
+import org.example.db.impl.Database;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.select.Elements;
+import org.jsoup.nodes.Element;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
  * Parser of html page which extract today's date and temperature range.
  */
 public class WeatherParser implements WeatherInfo {
+
     /**
-     * Get instance of MySQL database class.
+     * Get instance of Database.
      */
-    MySQLDB database = MySQLDB.getDatabase();
+    Database db = DBFactory.getDB(DBTypes.MYSQL_DB);
 
     /**
      * Creating log4j2 logger.
@@ -33,16 +38,17 @@ public class WeatherParser implements WeatherInfo {
      * @throws RuntimeException If html page can not be downloaded. Caused by MalformedURLException.
      */
     private Document getPage() {
-        String url = "https://www.gismeteo.by/weather-minsk-4248/";
+        String url = "http://www.intermeteo.com/europe/belarus/minsk/";
         logger.info("Url string created.");
         Document page = null;
         logger.info("Null Jsoup document created.");
         try {
             logger.info("Trying to parse html page.");
-            page = Jsoup.parse(new URL(url), 3000);
+            page = Jsoup.parse(new URL(url), 8000);
         } catch (IOException e) {
             logger.error("Html page parsing failed. Printing the last weather from database.");
-            database.printLastWeatherFromDatabase();
+            db.printLastWeatherFromDB();
+            db.closeConnection();
             System.exit(0);
         }
         logger.info("Html page successfully parsed.");
@@ -59,14 +65,30 @@ public class WeatherParser implements WeatherInfo {
         logger.info("Building Jsoup Document from html page.");
         Document page = getPage();
         logger.info("Searching for weather tags in Jsoup Document.");
-        Elements todayForecast = page.select("div[class=tabs _center]").select("div[class=tab  tooltip]");
-        String date = todayForecast.select("div[class=date]").text();
-        Elements todayTemperatures = todayForecast.select("div[class=tabtempline tabtemp_0line clearfix]")
-                .select("span[class=unit unit_temperature_c]");
+        Element currentDate = page.select("th[id=dt]").first();
+        String date = dateStringCutter(currentDate.text());
+        Element currentTemperature = page.select("a[href=http://www.intermeteo.com/]").get(3);
+        String temp = currentTemperature.text();
         logger.info("Today's weather successfully found.");
-        database.putWeatherIntoDatabase(date, todayTemperatures.get(0).text() + " " + todayTemperatures.get(1).text());
-        logger.info("Weather was put into the database. Printing in console.");
-        return "Сегодня: " + date + "\n" +
-                "Температура: " + todayTemperatures.get(0).text() + " " + todayTemperatures.get(1).text();
+        db.putWeatherIntoDB(date, temp);
+        logger.info("Weather was put into the databases. Printing in console. Close database.");
+        db.closeConnection();
+        return "Current date: " + date + "\n" +
+                "Temperature: " + temp;
+    }
+
+
+    /**
+     * Cut extra words from today's date String.
+     *
+     * @return String
+     */
+    private String dateStringCutter(String dateString) {
+        Pattern pattern = Pattern.compile("\\d{2}\\.\\d{2}");
+        Matcher matcher = pattern.matcher(dateString);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+        throw new RuntimeException("Can not process date!");
     }
 }
