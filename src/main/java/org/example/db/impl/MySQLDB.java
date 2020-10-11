@@ -1,4 +1,4 @@
-package org.example.db;
+package org.example.db.impl;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,7 +12,7 @@ import static java.sql.DriverManager.getConnection;
 /**
  * MySQL database managing class.
  */
-public class MySQLDB {
+public class MySQLDB implements Database {
     /**
      * Get instance of Log4j2 logger.
      */
@@ -20,28 +20,28 @@ public class MySQLDB {
 
     private String userName = "root";
     private String password = "1234";
-    private String connectionUrl = "jdbc:mysql://localhost:3306/weather_db";
+    private String connectionUrl = "jdbc:mysql://localhost:3306/weather_db?serverTimezone=Europe/Minsk";
+    private Connection connection;
 
     /**
      * MySQL database static instance.
      */
-    private static MySQLDB database = new MySQLDB();
+    private static Database database = new MySQLDB();
 
     /**
      * Create MySQL database table if it was not created yet.
      */ {
-         logger.info("Create new MySQL weather table if is not found.");
+        logger.info("Create new MySQL weather table if is not found.");
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            Connection connection = getConnection(connectionUrl, userName, password);
+            connection = getConnection(connectionUrl, userName, password);
             Statement statement = connection.createStatement();
             statement.executeUpdate("CREATE TABLE IF Not EXISTS Weather " +
                     "(id MEDIUMINT NOT NULL AUTO_INCREMENT, " +
                     "DAY CHAR(20) NOT NULL, " +
                     "WEATHER CHAR(30) NOT NULL, " +
                     "PRIMARY KEY (id))");
-        } catch (
-                Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
             logger.error("New MySQL weather table creation failed.");
         }
@@ -53,19 +53,21 @@ public class MySQLDB {
     /**
      * Return MySQL database instance.
      */
-    public static MySQLDB getDatabase() {
+    public static Database getDatabase() {
         return database;
     }
 
     /**
      * Put weather into MySQL database.
      */
-    public void putWeatherIntoDatabase(String day, String weather) {
+    public void putWeatherIntoDB(String day, String weather) {
         logger.info("Trying to put weather into MySQL database.");
-        try (Connection connection = getConnection(connectionUrl, userName, password);
-             Statement statement = connection.createStatement()) {
-            statement.executeUpdate("insert into Weather (DAY, WEATHER) values ('" + day + "', '" + weather +
-                    "')");
+        try {
+            String sql = "insert into Weather (DAY, WEATHER) values (?, ?)";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            preparedStatement.setString(1, day);
+            preparedStatement.setString(2, weather);
+            preparedStatement.executeUpdate();
         } catch (
                 SQLException throwables) {
             throwables.printStackTrace();
@@ -77,13 +79,15 @@ public class MySQLDB {
     /**
      * Print weather from MySQL database in console.
      */
-    public void printLastWeatherFromDatabase() {
+    public void printLastWeatherFromDB() {
         logger.info("Trying to print weather from MySQL database in console.");
-        try (Connection connection = getConnection(connectionUrl, userName, password);
-             Statement statement = connection.createStatement()) {
-            ResultSet resultSet = statement.executeQuery("select * from Weather ORDER BY id DESC LIMIT 1");
+        try {
+            String sql = "select * from Weather ORDER BY id DESC LIMIT 1";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
-                System.out.println("Сегодня: " + resultSet.getString("DAY") + " \nТемпература: " + resultSet.getString("WEATHER"));
+                System.out.println("Current date: " + resultSet.getString("DAY") +
+                                   "\nTemperature: " + resultSet.getString("WEATHER"));
             }
         } catch (
                 SQLException throwables) {
@@ -91,5 +95,15 @@ public class MySQLDB {
             logger.error("Printing weather from MySQL database in console was failed.");
         }
         logger.info("Weather from MySQL database successfully printed in console.");
+    }
+
+    public void closeConnection() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+        }
     }
 }

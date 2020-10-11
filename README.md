@@ -1,17 +1,15 @@
 # Weather parser
 
-Console application for parsing weather in Minsk from www.gismeteo.by
+Console application for parsing weather in Minsk from www.intermeteo.com and storing it into Databases.
 
-### To start:
+### To run:
 
-- Install MySQL server.
-- Run Main.java
+- mvn clean install
+- MySQL and MongoDB servers required.
 
 ### Libraries used:
 
-
 - Jsoup
-- MySQL
 - Log4j2
   
  
