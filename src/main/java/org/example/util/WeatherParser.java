@@ -23,7 +23,7 @@ public class WeatherParser implements WeatherInfo {
     /**
      * Get instance of Database.
      */
-    Database db = DBFactory.getDB(DBTypes.MYSQL_DB);
+    private Database db = DBFactory.getDB(DBTypes.MYSQL_DB);
 
     /**
      * Creating log4j2 logger.

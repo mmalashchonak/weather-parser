@@ -4,12 +4,12 @@ Console application for parsing weather in Minsk from www.intermeteo.com and sto
 
 ### To run:
 
-- mvn clean install
-- MySQL and MongoDB servers required.
+- ```mvn clean install```
+- ```MySQL and MongoDB servers required.```
 
 ### Libraries used:
 
-- Jsoup
-- Log4j2
+- ```Jsoup```
+- ```Log4j2```
   
  

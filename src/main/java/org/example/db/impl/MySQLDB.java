@@ -3,9 +3,11 @@ package org.example.db.impl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.sql.*;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.util.Properties;
 
 import static java.sql.DriverManager.getConnection;
 
@@ -18,15 +20,43 @@ public class MySQLDB implements Database {
      */
     private static final Logger logger = LogManager.getLogger();
 
-    private String userName = "root";
-    private String password = "1234";
-    private String connectionUrl = "jdbc:mysql://localhost:3306/weather_db?serverTimezone=Europe/Minsk";
+    private String userName;
+    private String password;
+    private String connectionUrl;
     private Connection connection;
 
     /**
      * MySQL database static instance.
      */
     private static Database database = new MySQLDB();
+
+
+    /**
+     * Read MySQL settings from .properties and initialise fields.
+     */
+    {
+        Properties prop = new Properties();
+        InputStream input = null;
+
+        try {
+            input = new FileInputStream("config.properties");
+            prop.load(input);
+            userName = prop.getProperty("mysql_user");
+            password = prop.getProperty("mysql_pass");
+            connectionUrl = prop.getProperty("mysql_url");
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        } finally {
+            if (input != null) {
+                try {
+                    input.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
 
     /**
      * Create MySQL database table if it was not created yet.
@@ -82,12 +112,12 @@ public class MySQLDB implements Database {
     public void printLastWeatherFromDB() {
         logger.info("Trying to print weather from MySQL database in console.");
         try {
-            String sql = "select * from Weather ORDER BY id DESC LIMIT 1";
+            String sql = "select DAY, WEATHER, id from Weather ORDER BY id DESC LIMIT 1";
             PreparedStatement preparedStatement = connection.prepareStatement(sql);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
                 System.out.println("Current date: " + resultSet.getString("DAY") +
-                                   "\nTemperature: " + resultSet.getString("WEATHER"));
+                        "\nTemperature: " + resultSet.getString("WEATHER"));
             }
         } catch (
                 SQLException throwables) {
